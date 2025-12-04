@@ -510,7 +510,9 @@ Search for each person's LinkedIn profile and include actual URLs.`, {
     setCurrentStep("Gathering company metrics from multiple sources...");
     addLog("Researching company metrics");
 
-    const metrics = await callPerplexity(`Research verified metrics for ${companyName} (${companyUrl}).
+    const metrics = await callPerplexity(`CRITICAL REQUIREMENT: Your response MUST end with a JSON block containing structured metrics. This is mandatory.
+
+Research verified metrics for ${companyName} (${companyUrl}).
 
 Search LinkedIn, Crunchbase, company website, and press releases.
 
@@ -544,20 +546,20 @@ Search LinkedIn, Crunchbase, company website, and press releases.
 Verify each data point. Include sources.
 
 ---
-IMPORTANT: At the very end of your response, include this exact JSON block with the structured data you found. Use null for any values you could not find:
+MANDATORY: End your response with this exact JSON block. Fill in the values you found (use null if not found):
 
 \`\`\`json
 {
-  "employee_count": <number or null>,
-  "founded_year": <number or null>,
-  "headquarters": "<city, state/country>" or null,
-  "total_funding_millions": <number in millions or null>,
-  "valuation_millions": <number in millions or null>,
-  "funding_stage": "<Pre-Seed|Seed|Series A|Series B|Series C|Series D+|Growth|Public>" or null,
-  "latest_round_amount_millions": <number in millions or null>,
-  "latest_round_date": "<YYYY-MM>" or null
+  "employee_count": 150,
+  "founded_year": 2020,
+  "headquarters": "San Francisco, CA",
+  "total_funding_millions": 50,
+  "valuation_millions": 200,
+  "funding_stage": "Series B"
 }
-\`\`\``, {
+\`\`\`
+
+Replace the example values above with actual data for ${companyName}. This JSON block is REQUIRED.`, {
       systemPrompt: RESEARCH_SYSTEM_PROMPT,
       qualityThreshold: 2
     });
