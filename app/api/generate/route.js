@@ -44,14 +44,33 @@ YOUR RULES:
       })
     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      return Response.json({ error: err.error?.message || "Perplexity API error" }, { status: response.status });
+    const responseText = await response.text();
+
+    // Try to parse as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      // Response is not JSON (likely HTML error page)
+      console.error('Perplexity returned non-JSON:', responseText.substring(0, 200));
+      return Response.json({
+        error: `Perplexity API returned invalid response. Status: ${response.status}. Check your API key.`
+      }, { status: 500 });
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      return Response.json({
+        error: data.error?.message || `Perplexity API error (${response.status})`
+      }, { status: response.status });
+    }
+
+    if (!data.choices?.[0]?.message?.content) {
+      return Response.json({ error: "No content in Perplexity response" }, { status: 500 });
+    }
+
     return Response.json({ content: data.choices[0].message.content });
   } catch (error) {
+    console.error('Generate API error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
