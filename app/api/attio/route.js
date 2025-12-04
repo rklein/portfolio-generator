@@ -184,6 +184,11 @@ export async function POST(request) {
             top_competitors: [{ value: portfolioData.top_competitors }]
           }),
 
+          // TAM (Total Addressable Market)
+          ...(portfolioData.tam && {
+            tam: [{ currency_value: parseCurrency(portfolioData.tam) }]
+          }),
+
           // Metadata
           portfolio_last_updated: [{ value: new Date().toISOString().split('T')[0] }]
         }

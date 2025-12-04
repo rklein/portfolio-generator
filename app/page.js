@@ -531,6 +531,7 @@ Search LinkedIn, Crunchbase, company website, and press releases.
 | Post-Money Valuation | [$X or "Not disclosed"] | [Source] |
 | Revenue/ARR | [$X or "Private - not disclosed"] | [Source] |
 | Key Customers | [Named customers] | [Website/Press] |
+| TAM (Total Addressable Market) | [$X billion] | [Industry reports, analyst estimates] |
 
 **All Investors:**
 | Investor | Round(s) Participated | Board Seat? |
@@ -555,7 +556,8 @@ MANDATORY: End your response with this exact JSON block. Fill in the values you 
   "headquarters": "San Francisco, CA",
   "total_funding_millions": 50,
   "valuation_millions": 200,
-  "funding_stage": "Series B"
+  "funding_stage": "Series B",
+  "tam_billions": 15
 }
 \`\`\`
 
@@ -1095,6 +1097,7 @@ ${sections.sources || ""}
           if (parsed.total_funding_millions) data.total_funding = `${parsed.total_funding_millions}M`;
           if (parsed.valuation_millions) data.valuation = `${parsed.valuation_millions}M`;
           if (parsed.funding_stage) data.funding_stage = parsed.funding_stage;
+          if (parsed.tam_billions) data.tam = `${parsed.tam_billions}B`;
         } catch (e) {
           console.error('Failed to parse metrics JSON:', e);
         }
