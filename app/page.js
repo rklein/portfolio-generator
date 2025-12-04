@@ -71,6 +71,7 @@ export default function Home() {
   const [logs, setLogs] = useState([]);
   const [pushingToAttio, setPushingToAttio] = useState(false);
   const [attioResult, setAttioResult] = useState(null);
+  const [extractedJSON, setExtractedJSON] = useState(null);
 
   const addLog = (message) => {
     setLogs(prev => [...prev.slice(-50), `${new Date().toLocaleTimeString()}: ${message}`]);
@@ -543,41 +544,78 @@ Search LinkedIn, Crunchbase, company website, and press releases.
 - [Partner 2]: [Type of partnership]
 
 Verify each data point. Include sources.`, {
-      systemPrompt: `${RESEARCH_SYSTEM_PROMPT}
-
-ABSOLUTELY CRITICAL OUTPUT REQUIREMENT:
-You MUST end EVERY response with a structured JSON block. This is non-negotiable.
-
-The JSON block must appear at the very end of your response, formatted exactly like this:
-
-\`\`\`json
-{
-  "employee_count": 150,
-  "founded_year": 2020,
-  "headquarters": "San Francisco, CA",
-  "total_funding_millions": 50,
-  "valuation_millions": 200,
-  "funding_stage": "Series B",
-  "tam_billions": 15,
-  "top_competitors": ["Competitor1", "Competitor2", "Competitor3"]
-}
-\`\`\`
-
-Rules for the JSON:
-- employee_count: number (e.g., 150)
-- founded_year: number (e.g., 2020)
-- headquarters: string with city and state/country
-- total_funding_millions: number in millions (e.g., 50 means $50M)
-- valuation_millions: number in millions (e.g., 200 means $200M), use null if not known
-- funding_stage: string like "Seed", "Series A", "Series B", etc.
-- tam_billions: number in billions (e.g., 15 means $15B), use null if not known
-- top_competitors: array of 3-5 company names as strings
-
-Use null for any value you cannot find. DO NOT skip the JSON block.`,
+      systemPrompt: RESEARCH_SYSTEM_PROMPT,
       qualityThreshold: 2
     });
 
     return metrics;
+  };
+
+  // Dedicated JSON extraction - separate from research for reliability
+  const extractStructuredJSON = async (metricsContent, competitorsContent) => {
+    setCurrentStep("Extracting structured data...");
+    addLog("Extracting JSON metrics");
+
+    const jsonResponse = await callPerplexity(`Based on the research below, extract ONLY a JSON object. Do not include any other text.
+
+---
+COMPANY METRICS RESEARCH:
+${metricsContent.substring(0, 3000)}
+
+COMPETITORS RESEARCH:
+${competitorsContent?.substring(0, 1000) || 'Not available'}
+---
+
+Return ONLY valid JSON in this exact format (no markdown, no explanation, just the JSON):
+{
+  "employee_count": <number or null>,
+  "founded_year": <number or null>,
+  "headquarters": "<City, State/Country>" or null,
+  "total_funding_millions": <number or null>,
+  "valuation_millions": <number or null>,
+  "funding_stage": "<Seed|Series A|Series B|etc>" or null,
+  "tam_billions": <number or null>,
+  "top_competitors": ["Company1", "Company2", "Company3"]
+}
+
+Rules:
+- Numbers only (no $ or M/B suffixes)
+- total_funding_millions: convert to millions (e.g., $43M = 43, $1.2B = 1200)
+- tam_billions: convert to billions (e.g., $50B = 50)
+- headquarters: "City, State" or "City, Country" format only
+- top_competitors: array of 3-5 direct competitor names
+- Use null for unknown values, not strings like "Unknown"`, {
+      systemPrompt: `You are a JSON extraction assistant. Return ONLY valid JSON, nothing else. No markdown code blocks, no explanations, just the raw JSON object.`,
+      maxRetries: 1,
+      retryOnRefusal: false,
+      retryOnLowQuality: false
+    });
+
+    // Parse the JSON response
+    try {
+      // Try to extract JSON from the response (handle if wrapped in markdown)
+      let jsonStr = jsonResponse.trim();
+
+      // Remove markdown code blocks if present
+      const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[1].trim();
+      }
+
+      // Remove any leading/trailing non-JSON content
+      const jsonStart = jsonStr.indexOf('{');
+      const jsonEnd = jsonStr.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        jsonStr = jsonStr.substring(jsonStart, jsonEnd + 1);
+      }
+
+      const parsed = JSON.parse(jsonStr);
+      console.log('Successfully extracted structured JSON:', parsed);
+      return parsed;
+    } catch (e) {
+      console.error('Failed to parse extracted JSON:', e, jsonResponse.substring(0, 200));
+      return null;
+    }
   };
 
   const generateCompetitiveLandscape = async () => {
@@ -947,6 +985,19 @@ Provide 15+ sources with actual, verified URLs.`, {
       newSections.competitiveLandscape = await generateCompetitiveLandscape();
       setSections(prev => ({ ...prev, competitiveLandscape: newSections.competitiveLandscape }));
 
+      // Extract structured JSON from metrics and competitors (separate dedicated request)
+      setCurrentSection("Extracting Structured Data");
+      const structuredData = await extractStructuredJSON(
+        newSections.companyMetrics,
+        newSections.competitiveLandscape
+      );
+      setExtractedJSON(structuredData);
+      if (structuredData) {
+        addLog(`✅ Extracted JSON: ${Object.keys(structuredData).filter(k => structuredData[k] !== null).length} fields populated`);
+      } else {
+        addLog("⚠️ JSON extraction failed, will use regex fallbacks");
+      }
+
       setCurrentSection("News & Media");
       newSections.newsMedia = await generateNewsMedia();
       setSections(prev => ({ ...prev, newsMedia: newSections.newsMedia }));
@@ -1263,8 +1314,35 @@ ${sections.sources || ""}
     setAttioResult(null);
 
     try {
-      // Extract structured data from sections and sanitize to remove garbage
-      const extractedData = sanitizeExtractedData(extractStructuredData(sections));
+      // Use dedicated JSON extraction if available, fall back to regex extraction
+      let structuredData = {};
+
+      if (extractedJSON) {
+        // Use the dedicated JSON extraction (more reliable)
+        console.log('Using dedicated JSON extraction:', extractedJSON);
+        structuredData = {
+          employee_count: extractedJSON.employee_count,
+          founded_year: extractedJSON.founded_year,
+          headquarters: extractedJSON.headquarters,
+          total_funding: extractedJSON.total_funding_millions ? `${extractedJSON.total_funding_millions}M` : null,
+          valuation: extractedJSON.valuation_millions ? `${extractedJSON.valuation_millions}M` : null,
+          funding_stage: extractedJSON.funding_stage,
+          tam: extractedJSON.tam_billions ? `${extractedJSON.tam_billions}B` : null,
+          top_competitors: extractedJSON.top_competitors?.join(', ') || null
+        };
+        // Remove null values
+        Object.keys(structuredData).forEach(key => {
+          if (structuredData[key] === null || structuredData[key] === undefined) {
+            delete structuredData[key];
+          }
+        });
+      }
+
+      // Fall back to regex extraction for any missing fields
+      const regexExtracted = sanitizeExtractedData(extractStructuredData(sections));
+      const extractedData = { ...regexExtracted, ...structuredData }; // JSON takes precedence
+
+      console.log('Final extracted data for Attio:', extractedData);
 
       const response = await fetch('/api/attio', {
         method: 'POST',
