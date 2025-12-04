@@ -306,14 +306,15 @@ export async function POST(request) {
       }
     }
 
-    // Step 5: Auto-link Collection to Search
-    // Finds a Collection matching the company name and links it via list_id and list_url
+    // Step 5: Find or Create Collection for this Search
+    // Creates a new Collection based on Snorkel template if one doesn't exist
     let collectionLinked = false;
     let collectionName = null;
+    let collectionCreated = false;
 
     if (portfolioData.company_name) {
       try {
-        // Fetch all Collections (Lists)
+        // Fetch all existing Collections
         const listsRes = await fetch('https://api.attio.com/v2/lists', {
           headers: {
             'Authorization': `Bearer ${attioApiKey}`,
@@ -323,13 +324,138 @@ export async function POST(request) {
         const listsData = await listsRes.json();
         const collections = listsData.data || [];
 
-        // Find a Collection whose name contains the company name (case-insensitive)
+        // Look for existing collection matching company name
         const companyNameLower = portfolioData.company_name.toLowerCase();
-        const matchingCollection = collections.find(collection =>
+        let matchingCollection = collections.find(collection =>
           collection.name?.toLowerCase().includes(companyNameLower) ||
           companyNameLower.includes(collection.name?.toLowerCase())
         );
 
+        // If no matching collection exists, create one from template
+        if (!matchingCollection) {
+          const newCollectionName = `${portfolioData.company_name} - ${portfolioData.role_title || 'Search'}`;
+
+          // Create new Collection (List) based on People object like Snorkel
+          const createListRes = await fetch('https://api.attio.com/v2/lists', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${attioApiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              data: {
+                name: newCollectionName,
+                parent_object: "people",  // Same as Snorkel - tracks candidates
+                workspace_access: "full-access"
+              }
+            })
+          });
+
+          if (createListRes.ok) {
+            const newList = await createListRes.json();
+            matchingCollection = newList.data;
+            collectionCreated = true;
+            console.log(`Created new Collection: ${newCollectionName}`);
+
+            // Add Stage status attribute (like Snorkel's recruiting pipeline)
+            const listId = newList.data.id.list_id;
+
+            // Create Stage attribute
+            await fetch(`https://api.attio.com/v2/lists/${listId}/attributes`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${attioApiKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                data: {
+                  title: "Stage",
+                  api_slug: "stage",
+                  type: "status"
+                }
+              })
+            });
+
+            // Create Role level attribute
+            await fetch(`https://api.attio.com/v2/lists/${listId}/attributes`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${attioApiKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                data: {
+                  title: "Role level",
+                  api_slug: "role_level",
+                  type: "select"
+                }
+              })
+            });
+
+            // Create Source attribute
+            await fetch(`https://api.attio.com/v2/lists/${listId}/attributes`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${attioApiKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                data: {
+                  title: "Source",
+                  api_slug: "source",
+                  type: "select"
+                }
+              })
+            });
+
+            // Create Archetype attribute (text field for candidate type)
+            await fetch(`https://api.attio.com/v2/lists/${listId}/attributes`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${attioApiKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                data: {
+                  title: "Archetype",
+                  api_slug: "archetype",
+                  type: "text"
+                }
+              })
+            });
+
+            // Add status options to Stage field
+            const stageStatuses = [
+              "1. Targeting",
+              "2. Reached Out",
+              "3. In Conversation",
+              "4. Interviewing",
+              "5. Offer",
+              "6. Hired",
+              "7. Pass / Declined"
+            ];
+
+            for (const statusTitle of stageStatuses) {
+              await fetch(`https://api.attio.com/v2/lists/${listId}/attributes/stage/statuses`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${attioApiKey}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  data: {
+                    title: statusTitle
+                  }
+                })
+              });
+            }
+
+          } else {
+            console.error('Failed to create collection:', await createListRes.json());
+          }
+        }
+
+        // Link the Collection to the Search record
         if (matchingCollection) {
           const collectionId = matchingCollection.id.list_id;
           const collectionUrl = `https://app.attio.com/aperturesearch/collection/${collectionId}`;
@@ -358,11 +484,9 @@ export async function POST(request) {
           } else {
             console.error('Failed to link collection:', await linkRes.json());
           }
-        } else {
-          console.log(`No Collection found matching "${portfolioData.company_name}"`);
         }
       } catch (err) {
-        console.error('Error auto-linking collection:', err);
+        console.error('Error with collection:', err);
         // Don't fail the whole request
       }
     }
@@ -372,10 +496,11 @@ export async function POST(request) {
       recordId: recordId,
       isNewRecord: isNewRecord,
       collectionLinked: collectionLinked,
+      collectionCreated: collectionCreated,
       collectionName: collectionName,
       message: isNewRecord
-        ? `Created new Search and pushed portfolio${collectionLinked ? ` (linked to "${collectionName}" collection)` : ''}`
-        : `Updated existing Search with portfolio${collectionLinked ? ` (linked to "${collectionName}" collection)` : ''}`,
+        ? `Created new Search and pushed portfolio${collectionCreated ? ` (created new "${collectionName}" collection)` : collectionLinked ? ` (linked to "${collectionName}" collection)` : ''}`
+        : `Updated existing Search with portfolio${collectionCreated ? ` (created new "${collectionName}" collection)` : collectionLinked ? ` (linked to "${collectionName}" collection)` : ''}`,
       attioUrl: `https://app.attio.com/aperturesearch/searches/${recordId}`
     });
 
