@@ -510,9 +510,7 @@ Search for each person's LinkedIn profile and include actual URLs.`, {
     setCurrentStep("Gathering company metrics from multiple sources...");
     addLog("Researching company metrics");
 
-    const metrics = await callPerplexity(`CRITICAL REQUIREMENT: Your response MUST end with a JSON block containing structured metrics. This is mandatory.
-
-Research verified metrics for ${companyName} (${companyUrl}).
+    const metrics = await callPerplexity(`Research verified metrics for ${companyName} (${companyUrl}).
 
 Search LinkedIn, Crunchbase, company website, and press releases.
 
@@ -544,10 +542,13 @@ Search LinkedIn, Crunchbase, company website, and press releases.
 - [Partner 1]: [Type of partnership]
 - [Partner 2]: [Type of partnership]
 
-Verify each data point. Include sources.
+Verify each data point. Include sources.`, {
+      systemPrompt: `${RESEARCH_SYSTEM_PROMPT}
 
----
-MANDATORY: End your response with this exact JSON block. Fill in the values you found (use null if not found):
+ABSOLUTELY CRITICAL OUTPUT REQUIREMENT:
+You MUST end EVERY response with a structured JSON block. This is non-negotiable.
+
+The JSON block must appear at the very end of your response, formatted exactly like this:
 
 \`\`\`json
 {
@@ -558,12 +559,21 @@ MANDATORY: End your response with this exact JSON block. Fill in the values you 
   "valuation_millions": 200,
   "funding_stage": "Series B",
   "tam_billions": 15,
-  "top_competitors": ["Competitor1", "Competitor2", "Competitor3", "Competitor4", "Competitor5"]
+  "top_competitors": ["Competitor1", "Competitor2", "Competitor3"]
 }
 \`\`\`
 
-Replace the example values above with actual data for ${companyName}. This JSON block is REQUIRED.`, {
-      systemPrompt: RESEARCH_SYSTEM_PROMPT,
+Rules for the JSON:
+- employee_count: number (e.g., 150)
+- founded_year: number (e.g., 2020)
+- headquarters: string with city and state/country
+- total_funding_millions: number in millions (e.g., 50 means $50M)
+- valuation_millions: number in millions (e.g., 200 means $200M), use null if not known
+- funding_stage: string like "Seed", "Series A", "Series B", etc.
+- tam_billions: number in billions (e.g., 15 means $15B), use null if not known
+- top_competitors: array of 3-5 company names as strings
+
+Use null for any value you cannot find. DO NOT skip the JSON block.`,
       qualityThreshold: 2
     });
 
@@ -1157,16 +1167,30 @@ ${sections.sources || ""}
       }
     }
 
-    // Extract competitors from competitiveLandscape
+    // Extract competitors from competitiveLandscape (only if JSON didn't provide them)
     if (sections.competitiveLandscape && !data.top_competitors) {
-      // Try to get first few company names from the direct competitors section
-      const directMatch = sections.competitiveLandscape.match(/direct\s*competitors?[^:]*:?\s*([^\n]*(?:\n[^*\n][^\n]*)*)/i);
-      if (directMatch) {
-        // Extract company names (usually at start of list items)
-        const companies = directMatch[1].match(/\d+\.\s*\*?\*?([A-Z][A-Za-z0-9\s&.-]+)/g);
-        if (companies) {
-          data.top_competitors = companies.slice(0, 5).map(c => c.replace(/^\d+\.\s*\*?\*?/, '').trim()).join(', ');
+      // Look for numbered list items that start with a company name (capitalized, short)
+      // Must NOT contain common instruction words
+      const instructionWords = ['search', 'open', 'click', 'find', 'the company', 'visit', 'go to', 'navigate'];
+      const lines = sections.competitiveLandscape.split('\n');
+      const competitors = [];
+
+      for (const line of lines) {
+        // Look for numbered list items: "1. CompanyName" or "1. **CompanyName**"
+        const match = line.match(/^\s*\d+\.\s*\*?\*?([A-Z][A-Za-z0-9\s&.-]{1,30})/);
+        if (match) {
+          const name = match[1].trim().replace(/\*+$/, '').trim();
+          // Skip if it looks like instructions
+          const isInstruction = instructionWords.some(w => name.toLowerCase().includes(w));
+          if (!isInstruction && name.length > 1 && name.length < 30) {
+            competitors.push(name);
+          }
         }
+        if (competitors.length >= 5) break;
+      }
+
+      if (competitors.length > 0) {
+        data.top_competitors = competitors.join(', ');
       }
     }
 
