@@ -557,7 +557,8 @@ MANDATORY: End your response with this exact JSON block. Fill in the values you 
   "total_funding_millions": 50,
   "valuation_millions": 200,
   "funding_stage": "Series B",
-  "tam_billions": 15
+  "tam_billions": 15,
+  "top_competitors": ["Competitor1", "Competitor2", "Competitor3", "Competitor4", "Competitor5"]
 }
 \`\`\`
 
@@ -1098,6 +1099,9 @@ ${sections.sources || ""}
           if (parsed.valuation_millions) data.valuation = `${parsed.valuation_millions}M`;
           if (parsed.funding_stage) data.funding_stage = parsed.funding_stage;
           if (parsed.tam_billions) data.tam = `${parsed.tam_billions}B`;
+          if (parsed.top_competitors && Array.isArray(parsed.top_competitors)) {
+            data.top_competitors = parsed.top_competitors.join(', ');
+          }
         } catch (e) {
           console.error('Failed to parse metrics JSON:', e);
         }
