@@ -1118,6 +1118,7 @@ ${sections.sources || ""}
       }
 
       // Fallback to regex if JSON parsing failed or was incomplete
+      // These are intentionally strict to avoid capturing garbage text
       if (!data.employee_count) {
         const empMatch = metrics.match(/(\d{1,3}(?:,\d{3})*)\s*employees/i);
         if (empMatch) data.employee_count = empMatch[1].replace(/,/g, '');
@@ -1128,9 +1129,17 @@ ${sections.sources || ""}
         if (foundedMatch) data.founded_year = foundedMatch[1];
       }
 
+      // Headquarters regex - must look like a location (City, State/Country format)
+      // Max 60 chars, must contain a comma or be a known city pattern
       if (!data.headquarters) {
-        const hqMatch = metrics.match(/(?:headquarters?|hq)[:\s]+([^|\n]+)/i);
-        if (hqMatch) data.headquarters = hqMatch[1].trim();
+        const hqMatch = metrics.match(/(?:headquarters?|hq)[:\s|]+([A-Z][A-Za-z\s]+,\s*[A-Z][A-Za-z\s]+)/i);
+        if (hqMatch) {
+          const hq = hqMatch[1].trim();
+          // Validate it looks like a location (contains comma, reasonable length)
+          if (hq.length < 60 && hq.includes(',')) {
+            data.headquarters = hq;
+          }
+        }
       }
     }
 
@@ -1198,6 +1207,48 @@ ${sections.sources || ""}
     return data;
   };
 
+  // Validate and sanitize extracted data to prevent garbage from being pushed to Attio
+  const sanitizeExtractedData = (data) => {
+    const sanitized = { ...data };
+    const garbagePatterns = [
+      /not publicly/i,
+      /not disclosed/i,
+      /cannot be verified/i,
+      /search the/i,
+      /open the/i,
+      /click/i,
+      /navigate/i,
+      /I cannot/i,
+      /I don't have/i,
+      /unavailable/i,
+      /full funding history/i,
+      /would require guessing/i,
+    ];
+
+    // Check each text field for garbage patterns
+    const textFields = ['headquarters', 'top_competitors'];
+    for (const field of textFields) {
+      if (sanitized[field]) {
+        const hasGarbage = garbagePatterns.some(p => p.test(sanitized[field]));
+        const tooLong = sanitized[field].length > 100;
+        if (hasGarbage || tooLong) {
+          console.log(`Removing garbage from ${field}:`, sanitized[field].substring(0, 50));
+          delete sanitized[field];
+        }
+      }
+    }
+
+    // Validate numeric fields
+    if (sanitized.employee_count && (isNaN(sanitized.employee_count) || sanitized.employee_count < 1)) {
+      delete sanitized.employee_count;
+    }
+    if (sanitized.founded_year && (isNaN(sanitized.founded_year) || sanitized.founded_year < 1900 || sanitized.founded_year > 2025)) {
+      delete sanitized.founded_year;
+    }
+
+    return sanitized;
+  };
+
   const handlePushToAttio = async () => {
     if (!attioApiKey) {
       setError("Please enter your Attio API key");
@@ -1208,8 +1259,8 @@ ${sections.sources || ""}
     setAttioResult(null);
 
     try {
-      // Extract structured data from sections
-      const extractedData = extractStructuredData(sections);
+      // Extract structured data from sections and sanitize to remove garbage
+      const extractedData = sanitizeExtractedData(extractStructuredData(sections));
 
       const response = await fetch('/api/attio', {
         method: 'POST',
