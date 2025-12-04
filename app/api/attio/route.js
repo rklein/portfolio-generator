@@ -334,6 +334,12 @@ export async function POST(request) {
         // If no matching collection exists, create one from template
         if (!matchingCollection) {
           const newCollectionName = `${portfolioData.company_name} - ${portfolioData.role_title || 'Search'}`;
+          // Generate a slug from the name (lowercase, hyphens, no special chars)
+          const apiSlug = newCollectionName
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '_')
+            .substring(0, 50);
 
           // Create new Collection (List) based on People object like Snorkel
           const createListRes = await fetch('https://api.attio.com/v2/lists', {
@@ -345,8 +351,10 @@ export async function POST(request) {
             body: JSON.stringify({
               data: {
                 name: newCollectionName,
+                api_slug: apiSlug,
                 parent_object: "people",  // Same as Snorkel - tracks candidates
-                workspace_access: "full-access"
+                workspace_access: "full-access",
+                workspace_member_access: []  // Required field, empty = use workspace_access
               }
             })
           });
@@ -360,69 +368,40 @@ export async function POST(request) {
             // Add Stage status attribute (like Snorkel's recruiting pipeline)
             const listId = newList.data.id.list_id;
 
-            // Create Stage attribute
-            await fetch(`https://api.attio.com/v2/lists/${listId}/attributes`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${attioApiKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                data: {
-                  title: "Stage",
-                  api_slug: "stage",
-                  type: "status"
-                }
-              })
-            });
+            // Helper to create attribute with all required fields
+            const createAttribute = async (title, apiSlug, type) => {
+              return fetch(`https://api.attio.com/v2/lists/${listId}/attributes`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${attioApiKey}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  data: {
+                    title,
+                    api_slug: apiSlug,
+                    type,
+                    description: "",
+                    is_required: false,
+                    is_unique: false,
+                    is_multiselect: false,
+                    config: {}
+                  }
+                })
+              });
+            };
+
+            // Create Stage attribute (status field for pipeline)
+            await createAttribute("Stage", "stage", "status");
 
             // Create Role level attribute
-            await fetch(`https://api.attio.com/v2/lists/${listId}/attributes`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${attioApiKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                data: {
-                  title: "Role level",
-                  api_slug: "role_level",
-                  type: "select"
-                }
-              })
-            });
+            await createAttribute("Role level", "role_level", "select");
 
             // Create Source attribute
-            await fetch(`https://api.attio.com/v2/lists/${listId}/attributes`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${attioApiKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                data: {
-                  title: "Source",
-                  api_slug: "source",
-                  type: "select"
-                }
-              })
-            });
+            await createAttribute("Source", "source", "select");
 
             // Create Archetype attribute (text field for candidate type)
-            await fetch(`https://api.attio.com/v2/lists/${listId}/attributes`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${attioApiKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                data: {
-                  title: "Archetype",
-                  api_slug: "archetype",
-                  type: "text"
-                }
-              })
-            });
+            await createAttribute("Archetype", "archetype", "text");
 
             // Add status options to Stage field
             const stageStatuses = [
