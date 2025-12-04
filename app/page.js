@@ -1223,6 +1223,10 @@ ${sections.sources || ""}
       /unavailable/i,
       /full funding history/i,
       /would require guessing/i,
+      /other offices/i,
+      /not found/i,
+      /unknown/i,
+      /\[.*\]/i,  // Brackets like [City] or [Source]
     ];
 
     // Check each text field for garbage patterns
