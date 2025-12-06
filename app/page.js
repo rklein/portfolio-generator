@@ -201,170 +201,91 @@ You are being paid to find this data. Do the work.`;
 
   const getSimplePrompt = (sectionId) => {
     const prompts = {
-      foundersStory: `Research the founders of ${companyName} (${companyUrl}).
+      foundersStory: `Who are the founders of ${companyName} (${companyUrl}) and what's their background?
 
-**Founder Profiles:**
+For each founder, I want to know:
+- Their name and title
+- Their LinkedIn profile URL
+- Their education background
+- Their career history before ${companyName} (previous companies and roles)
+- Any notable achievements (exits, patents, awards)
 
-For EACH founder, create a profile:
+Also tell me the origin story:
+- What problem did they personally experience that led to starting this company?
+- How and when did they start ${companyName}?
+- What was their key insight or "aha moment"?
+- Why are these founders uniquely qualified to solve this problem?
 
-### [Founder Name] - [Title]
-- **LinkedIn:** [Search "[Name] LinkedIn" and provide actual URL like linkedin.com/in/username]
-- **Education:** [University, Degree, Year if available]
-- **Career Path:**
-  - [Company 1] - [Role] ([Years])
-  - [Company 2] - [Role] ([Years])
-  - [Company 3] - [Role] ([Years])
-- **Notable:** [Any exits, patents, awards, publications]
+Finally, list any founder interviews, podcasts, or talks you can find with URLs.`,
 
-**Origin Story:**
+      executiveSummary: `${companyName} (${companyUrl}) is hiring a ${roleName}. Help me understand why.
 
-Write 2-3 paragraphs covering:
-- What problem did they personally experience?
-- When/how did they start ${companyName}?
-- What was the key insight or "aha moment"?
-- Any early struggles, pivots, or first customers?
+First, tell me where ${companyName} is right now:
+- What's their current stage (funding raised, team size, customer base)?
+- What recently happened (funding round, product launch, milestone)?
+- Where are they headed?
 
-**Founder-Market Fit:**
-- Why are THESE founders uniquely qualified?
-- What unfair advantages do they have?
-
-**Interviews/Media:**
-- [List any podcasts, talks, or interviews with actual URLs]
-
-SEARCH their names on LinkedIn, podcasts, YouTube, and press.`,
-
-      executiveSummary: `For ${companyName} (${companyUrl}) hiring a ${roleName}:
-
-**Company Inflection Point**
-(2 paragraphs on where ${companyName} is right now)
-- Current stage: funding, ARR, team size, customers
-- What just happened: recent funding, product launch, milestone
-- Trajectory: where are they headed
-
-**Why This ${roleName} Role Exists Now**
-(2 paragraphs)
+Second, why does this ${roleName} role exist now?
 - What triggered this hire?
-- What gap does it fill?
-- Reporting structure and scope
+- What gap will this person fill?
+- Who will they report to?
 
-**Why Now - The Four Reasons:**
+Third, explain the timing - why is this role critical right now? Consider:
+- How does recent funding enable this hire?
+- What market or competitive pressure makes this urgent?
+- What stage of growth demands this role?
+- What customer needs are driving this?`,
 
-1. **Capital/Resource:** [How does recent funding enable this hire?]
-2. **Competitive/Market:** [What market timing makes this urgent?]
-3. **Organizational:** [What growth stage demands this role?]
-4. **Customer/Pipeline:** [What customer needs drive this?]
+      topPriorities: `Based on your research about ${companyName} (${companyUrl}), what should be the top 3 priorities for their new ${roleName} in the first 18-24 months?
 
-Research the company's recent announcements, funding, and job postings.`,
+For each priority, explain:
+- What specifically needs to be accomplished (measurable outcome)
+- Why this is critical for ${companyName} right now
+- How success would be measured
+- What resources or team would be needed
 
-      topPriorities: `Research ${companyName} (${companyUrl}) and define the top 3 priorities for their new ${roleName}:
+Make these specific to ${companyName}'s actual situation - not generic priorities that would apply to any company.`,
 
-**Priority 1: [Specific Title]**
-- **Objective:** [What exactly needs to be accomplished - measurable outcome]
-- **Why It Matters:** [Why this is critical for ${companyName} specifically right now]
-- **Success Metrics:** [How will success be measured]
-- **Timeline:** [18-24 month expectation]
-- **Resources Needed:** [Team, budget, tools]
+      searchRequirements: `What should ${companyName} (${companyUrl}) look for in their ${roleName} hire?
 
-**Priority 2: [Specific Title]**
-- **Objective:** [Measurable outcome]
-- **Why It Matters:** [Company-specific reason]
-- **Success Metrics:** [Measurements]
-- **Timeline:** [Expectation]
-- **Resources Needed:** [Requirements]
+Based on their stage, industry, and situation, list:
 
-**Priority 3: [Specific Title]**
-- **Objective:** [Measurable outcome]
-- **Why It Matters:** [Company-specific reason]
-- **Success Metrics:** [Measurements]
-- **Timeline:** [Expectation]
-- **Resources Needed:** [Requirements]
+1. Must-have requirements (8 items) - what skills, experiences, and backgrounds are essential? For each one, explain why it matters specifically for ${companyName}.
 
-Make these SPECIFIC to ${companyName}'s actual situation based on your research. Not generic.`,
+2. Nice-to-have requirements (5 items) - what would be bonus qualifications?
 
-      searchRequirements: `For ${companyName}'s ${roleName} role, based on their stage and situation:
+3. Target companies to source candidates from (8-10 companies) - which companies have people with relevant experience? Include competitors, companies at similar stage, portfolio companies of their investors, and companies in adjacent markets. For each, explain why they'd be a good source.`,
 
-**Must-Have Requirements (8 items):**
+      contradictions: `Research ${companyName} (${companyUrl}) and identify potential strategic tensions a ${roleName} would need to navigate.
 
-| Requirement | Why Critical for ${companyName} |
-|-------------|-------------------------------|
-| 1. [Specific requirement] | [Tied to their stage/situation] |
-| 2. [Specific requirement] | [Tied to their industry] |
-| 3. [Specific requirement] | [Tied to their growth targets] |
-| 4. [Specific requirement] | [Tied to their competitive position] |
-| 5. [Specific requirement] | [Tied to their team needs] |
-| 6. [Specific requirement] | [Tied to their customer base] |
-| 7. [Specific requirement] | [Tied to their product] |
-| 8. [Specific requirement] | [Tied to their investors' expectations] |
+First, give me context on their investors - who are the lead investors, who's on the board, and what's known about the company's valuation expectations?
 
-**Nice-to-Have Requirements (5 items):**
-1. [Preference with rationale]
-2. [Preference with rationale]
-3. [Preference with rationale]
-4. [Preference with rationale]
-5. [Preference with rationale]
+Then identify strategic tensions between what founders typically prioritize vs what investors expect. Consider areas like:
+- Growth vs profitability
+- Product investment vs sales investment
+- Mid-market vs enterprise focus
+- US vs international expansion
+- Build vs buy/partner decisions
 
-**Target Companies to Source Candidates From:**
+For each tension you identify, explain how a ${roleName} would need to navigate it.
 
-| Company | Stage | Why Good Fit |
-|---------|-------|--------------|
-| [Company 1] | [Series X, $YM ARR] | [Similar GTM, market, etc.] |
-| [Company 2] | ... | ... |
-| [Company 3] | ... | ... |
-| [Company 4] | ... | ... |
-| [Company 5] | ... | ... |
-| [Company 6] | ... | ... |
-| [Company 7] | ... | ... |
-| [Company 8] | ... | ... |
+Finally, suggest 3 specific questions a candidate should ask in interviews to understand how aligned the company is on these tensions.
 
-Include: competitors, companies at similar stage, same investors' portfolio companies, adjacent markets.`,
+Base this on actual research about ${companyName} and their investors, not generic advice.`,
 
-      contradictions: `Research ${companyName} (${companyUrl}), their investors, stage, and situation. Identify strategic tensions:
+      pitchToCandidates: `Write a compelling pitch to attract top candidates for the ${roleName} role at ${companyName} (${companyUrl}).
 
-**Investor Context:**
-- Lead investors: [Who]
-- Board members: [Who from which firms]
-- Stage/Valuation: [Details]
+Cover these points:
 
-**Strategic Tensions Matrix:**
+1. The Opportunity - Why is ${companyName} exciting? Include specific proof points like funding raised, growth rate, notable customers, and market size.
 
-| Topic | CEO/Founder Likely Prioritizes | Board/Investor Likely Prioritizes | How ${roleName} Navigates |
-|-------|-------------------------------|----------------------------------|--------------------------|
-| Growth vs Profitability | [Research CEO statements] | [Research investor thesis] | [Recommended approach] |
-| Product vs Sales Investment | [Founder background suggests...] | [Investor portfolio pattern suggests...] | [Balance point] |
-| Mid-market vs Enterprise | [Current customer base suggests...] | [Valuation expectations suggest...] | [Strategy] |
-| US vs International | [Current footprint] | [Investor expectations] | [Approach] |
-| Build vs Buy/Partner | [Company DNA suggests...] | [Time pressure suggests...] | [Framework] |
+2. The Mission - What will this person actually own? Be specific about scope, team size, budget authority, and key relationships.
 
-**Key Alignment Questions for the ${roleName}:**
-1. [Specific question to ask in interviews]
-2. [Specific question to ask in interviews]
-3. [Specific question to ask in interviews]
+3. Why Now - Why is this THE moment to join? What window is opening? What just happened that makes timing critical?
 
-Base this on actual research about the company and investors, not generic advice.`,
+4. The Upside - What does success look like? Career trajectory, equity potential, impact on the industry.
 
-      pitchToCandidates: `Write a compelling pitch for the ${roleName} role at ${companyName} (${companyUrl}):
-
-**The Opportunity**
-
-[2-3 paragraph pitch that would excite a top candidate. Include specific proof points: funding, growth rate, customers, market size. Make it compelling and specific to ${companyName}.]
-
-**Your Mission**
-
-[What will this person actually own? Scope, team size, budget authority, key relationships. Be specific about the mandate.]
-
-**Why Now**
-
-[Why is this THE moment to join? What window is opening? What just happened that makes timing critical?]
-
-**The Upside**
-
-[What does success look like? Career trajectory, equity potential, impact on the industry, legacy opportunity]
-
-**The Team**
-
-[Who will they work with? CEO background, leadership team caliber, board members, investors]
-
-Research the company thoroughly. Make this pitch specific and compelling, not generic.`,
+Make it compelling and specific to ${companyName} - this should excite a top candidate.`,
     };
     return prompts[sectionId];
   };
@@ -375,29 +296,19 @@ Research the company thoroughly. Make this pitch specific and compelling, not ge
     setCurrentStep("Searching Crunchbase & press releases...");
     addLog("Researching funding history");
 
-    const fundingData = await callPerplexity(`Research ALL funding rounds for ${companyName} (${companyUrl}).
+    const fundingData = await callPerplexity(`What is the complete funding history for ${companyName} (${companyUrl})?
 
-Search Crunchbase, PitchBook, company press releases, and TechCrunch.
+Search Crunchbase, PitchBook, and press releases.
 
-**Funding Rounds Table:**
+For each funding round, tell me:
+- Round type (Pre-Seed, Seed, Series A, B, C, etc.)
+- Amount raised
+- Date
+- Lead investor(s)
+- Other participating investors
+- Source URL where you found this
 
-| Round | Amount | Date | Lead Investor(s) | Other Investors | Source URL |
-|-------|--------|------|------------------|-----------------|------------|
-| Pre-Seed | $X | Month Year | [Investor] | [Others] | [URL] |
-| Seed | $X | Month Year | [Investor] | [Others] | [URL] |
-| Series A | $X | Month Year | [Investor] | [Others] | [URL] |
-| Series B | $X | Month Year | [Investor] | [Others] | [URL] |
-| [Continue...] | | | | | |
-
-**Summary:**
-- **Total Raised:** $X
-- **Latest Round:** [Type] - $X - [Date]
-- **Latest Valuation:** $X (or "Not publicly disclosed")
-
-IMPORTANT:
-- Rounds should be in CHRONOLOGICAL order (Seed before A before B before C)
-- Include source URLs for verification
-- If a round didn't happen, don't include it`, {
+List rounds in chronological order. At the end, summarize the total amount raised, the latest round details, and the latest known valuation if available.`, {
       systemPrompt: RESEARCH_SYSTEM_PROMPT,
       qualityThreshold: 2
     });
@@ -410,37 +321,18 @@ IMPORTANT:
     setCurrentStep("Finding executives on LinkedIn...");
     addLog("Searching for executive team");
 
-    const execList = await callPerplexity(`Find ALL current executives at ${companyName} (${companyUrl}).
+    const execList = await callPerplexity(`Who are the current executives at ${companyName} (${companyUrl})?
 
-Search:
-1. Company website /about or /team page
-2. LinkedIn company page → People section
-3. Recent press releases
-4. Crunchbase people section
+Search their company website, LinkedIn company page, and Crunchbase.
 
-Create a table of ALL C-level and VP-level people:
+List all C-level and VP-level executives with:
+- Their full name
+- Their title
+- Their LinkedIn profile URL (search for each person to find the actual URL)
 
-| Name | Title | LinkedIn URL |
-|------|-------|--------------|
-| [Full Name] | CEO/Co-founder | linkedin.com/in/[actual-handle] |
-| [Full Name] | CTO/Co-founder | linkedin.com/in/[actual-handle] |
-| [Full Name] | CFO | linkedin.com/in/[actual-handle] |
-| [Full Name] | COO | linkedin.com/in/[actual-handle] |
-| [Full Name] | CPO | linkedin.com/in/[actual-handle] |
-| [Full Name] | CMO | linkedin.com/in/[actual-handle] |
-| [Full Name] | CRO | linkedin.com/in/[actual-handle] |
-| [Full Name] | VP Engineering | linkedin.com/in/[actual-handle] |
-| [Full Name] | VP Sales | linkedin.com/in/[actual-handle] |
-| [Full Name] | VP Marketing | linkedin.com/in/[actual-handle] |
-| [Full Name] | VP Product | linkedin.com/in/[actual-handle] |
-| [Full Name] | General Counsel | linkedin.com/in/[actual-handle] |
+Include roles like CEO, CTO, CFO, COO, CPO, CMO, CRO, VP Engineering, VP Sales, VP Marketing, VP Product, etc.
 
-TO FIND LINKEDIN URLs:
-1. Search Google: "[Person Name] LinkedIn ${companyName}"
-2. The URL format is: linkedin.com/in/[username]
-3. Include the ACTUAL handle, not a placeholder
-
-Only include people you can verify currently work there.`, {
+Only include people who currently work there.`, {
       systemPrompt: RESEARCH_SYSTEM_PROMPT,
       qualityThreshold: 4
     });
@@ -449,22 +341,19 @@ Only include people you can verify currently work there.`, {
     setCurrentStep("Researching executive backgrounds...");
     addLog("Getting executive career histories");
 
-    const execDetails = await callPerplexity(`Research backgrounds for ${companyName}'s key executives.
+    const execDetails = await callPerplexity(`Research the career backgrounds for ${companyName}'s key executives.
 
-Executives found:
+Here are the executives I found:
 ${execList}
 
-For the 5 most senior executives, provide career backgrounds:
+For the 5 most senior executives, tell me about each person:
+- What is their current role at ${companyName}?
+- What was their most recent role before joining?
+- What are 2-3 notable earlier career positions?
+- Where did they go to school?
+- Any notable achievements, exits, or board seats?
 
-### [Name] - [Title]
-- **LinkedIn:** [URL from list above]
-- **Current Role:** [What they do at ${companyName}]
-- **Previous:** [Most recent role before ${companyName}] at [Company]
-- **Earlier Career:** [2-3 notable earlier roles]
-- **Education:** [University, Degree]
-- **Notable:** [Achievements, exits, board seats]
-
-Search LinkedIn profiles and press mentions for each person.`, {
+Search their LinkedIn profiles and press mentions.`, {
       systemPrompt: RESEARCH_SYSTEM_PROMPT,
       qualityThreshold: 3
     });
@@ -476,30 +365,18 @@ Search LinkedIn profiles and press mentions for each person.`, {
     setCurrentStep("Finding board members from funding announcements...");
     addLog("Searching for board members");
 
-    const boardData = await callPerplexity(`Research the Board of Directors for ${companyName} (${companyUrl}).
+    const boardData = await callPerplexity(`Who are the board members and board observers at ${companyName}?
 
-Search:
-1. Funding announcements - investors often take board seats with major rounds
-2. Company website About/Team/Leadership page
-3. Crunchbase → People → filter by Board Member
-4. Press releases mentioning "joins board" or "board of directors"
+Search their Crunchbase page, funding announcements, and company website.
 
-**Board of Directors:**
+For each board member, tell me:
+- Their name and role (Board Member, Board Observer, Chairman, etc.)
+- Their affiliation (the company/VC firm they represent, or "Founder" or "Independent")
+- When they likely joined (which funding round or year)
+- Their LinkedIn URL if you can find it
+- A brief background (1-2 sentences about their experience)
 
-| Name | Role | Affiliation | Joined With | LinkedIn URL |
-|------|------|-------------|-------------|--------------|
-| [Founder Name] | Board Member | Founder/CEO | Founding | linkedin.com/in/[handle] |
-| [Investor Name] | Board Member | [VC Firm] | Series A | linkedin.com/in/[handle] |
-| [Investor Name] | Board Member | [VC Firm] | Series B | linkedin.com/in/[handle] |
-| [Independent] | Board Member | Independent | [Year] | linkedin.com/in/[handle] |
-| [Observer Name] | Board Observer | [VC Firm] | Series X | linkedin.com/in/[handle] |
-
-**Board Member Backgrounds:**
-
-For each investor/independent board member:
-- **[Name]** ([Firm]): [Title at firm]. [2 sentences on background, other notable boards/investments]
-
-Search for each person's LinkedIn profile and include actual URLs.`, {
+Include founders who sit on the board, investor board members from VCs, and any independent board members.`, {
       systemPrompt: RESEARCH_SYSTEM_PROMPT,
       qualityThreshold: 3
     });
@@ -690,33 +567,20 @@ Search each company on LinkedIn and Crunchbase separately.`, {
     setCurrentStep("Finding press coverage...");
     addLog("Searching news articles");
 
-    const news = await callPerplexity(`Find news articles about ${companyName} (${companyUrl}) from the past 18 months.
+    const news = await callPerplexity(`What are the recent news articles and press coverage about ${companyName} (${companyUrl})?
 
-Search TechCrunch, VentureBeat, Forbes, Bloomberg, industry publications, and the company blog.
+Search for articles from the past 18 months on TechCrunch, VentureBeat, Forbes, Bloomberg, and industry publications.
 
-Return ONLY articles with verified, working URLs:
+I'm looking for:
+- Funding announcements
+- Product launches or major feature releases
+- Company milestones or executive hires
+- Founder interviews or podcast appearances
+- Notable blog posts from the company
 
-**Funding Announcements:**
-- [Headline](https://actual-url.com/article) - Publication (Month Year)
-- [Headline](https://actual-url.com/article) - Publication (Month Year)
+For each article, include the headline, publication name, date, and the URL to the article.
 
-**Product/Feature News:**
-- [Headline](https://actual-url.com/article) - Publication (Month Year)
-
-**Company News (Hires, Milestones):**
-- [Headline](https://actual-url.com/article) - Publication (Month Year)
-
-**Industry Features:**
-- [Headline](https://actual-url.com/article) - Publication (Month Year)
-
-**Founder Interviews/Podcasts:**
-- [Title](https://actual-url.com) - Platform (Month Year)
-
-**Company Blog:**
-- [Post Title](https://company-blog-url) - (Month Year)
-
-Target: 10-15 total articles
-Only include URLs you have actually found and verified.`, {
+List 10-15 articles total, with the most recent and significant ones first.`, {
       systemPrompt: RESEARCH_SYSTEM_PROMPT,
       qualityThreshold: 2
     });
