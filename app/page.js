@@ -195,6 +195,9 @@ YOUR RULES:
 5. Cite your sources with URLs when possible
 6. If data conflicts, note both values and sources
 
+CRITICAL - COMPANY DISAMBIGUATION:
+When researching a company, ALWAYS verify you are looking at the correct company by checking their website URL. Many company names are common (e.g., "Jellyfish", "Ramp", "Scale"). Use the company URL provided in the query to ensure you're researching the right company, not a different company with the same name.
+
 You are being paid to find this data. Do the work.`;
 
   // ========== SIMPLE SECTION PROMPTS ==========
@@ -341,7 +344,7 @@ Only include people who currently work there.`, {
     setCurrentStep("Researching executive backgrounds...");
     addLog("Getting executive career histories");
 
-    const execDetails = await callPerplexity(`Research the career backgrounds for ${companyName}'s key executives.
+    const execDetails = await callPerplexity(`Research the career backgrounds for the key executives at ${companyName} (${companyUrl}).
 
 Here are the executives I found:
 ${execList}
@@ -353,7 +356,7 @@ For the 5 most senior executives, tell me about each person:
 - Where did they go to school?
 - Any notable achievements, exits, or board seats?
 
-Search their LinkedIn profiles and press mentions.`, {
+Search their LinkedIn profiles and press mentions. Make sure you're researching people who work at ${companyUrl}, not a different company with a similar name.`, {
       systemPrompt: RESEARCH_SYSTEM_PROMPT,
       qualityThreshold: 3
     });
@@ -365,9 +368,11 @@ Search their LinkedIn profiles and press mentions.`, {
     setCurrentStep("Finding board members from funding announcements...");
     addLog("Searching for board members");
 
-    const boardData = await callPerplexity(`Who are the board members and board observers at ${companyName}?
+    const boardData = await callPerplexity(`Who are the board members and board observers at ${companyName} (${companyUrl})?
 
-Search their Crunchbase page, funding announcements, and company website.
+IMPORTANT: I'm asking about the company at ${companyUrl}, not any other company with a similar name.
+
+Search their Crunchbase page, funding announcements, and company website at ${companyUrl}.
 
 For each board member, tell me:
 - Their name and role (Board Member, Board Observer, Chairman, etc.)
