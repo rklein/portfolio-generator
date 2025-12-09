@@ -37,7 +37,7 @@ YOUR RULES:
         max_tokens: 16000,
         tools: [
           {
-            type: "web_search",
+            type: "web_search_20250305",
             name: "web_search",
             max_uses: 10
           }
