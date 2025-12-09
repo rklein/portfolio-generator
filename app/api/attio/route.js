@@ -1,7 +1,10 @@
 export async function POST(request) {
   const { attioApiKey, portfolioData, searchRecordId } = await request.json();
 
-  if (!attioApiKey || !portfolioData) {
+  // Use provided API key or fall back to environment variable
+  const attioKey = attioApiKey || process.env.ATTIO_API_KEY;
+
+  if (!attioKey || !portfolioData) {
     return Response.json({ error: "Missing attioApiKey or portfolioData" }, { status: 400 });
   }
 
@@ -15,7 +18,7 @@ export async function POST(request) {
       const existingSearchRes = await fetch('https://api.attio.com/v2/objects/searches/records/query', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${attioApiKey}`,
+          'Authorization': `Bearer ${attioKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -43,7 +46,7 @@ export async function POST(request) {
       const searchCompanyRes = await fetch('https://api.attio.com/v2/objects/companies/records/query', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${attioApiKey}`,
+          'Authorization': `Bearer ${attioKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -69,7 +72,7 @@ export async function POST(request) {
         const searchCompanyRes = await fetch('https://api.attio.com/v2/objects/companies/records/query', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${attioApiKey}`,
+            'Authorization': `Bearer ${attioKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -89,7 +92,7 @@ export async function POST(request) {
           const createCompanyRes = await fetch('https://api.attio.com/v2/objects/companies/records', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${attioApiKey}`,
+              'Authorization': `Bearer ${attioKey}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -113,7 +116,7 @@ export async function POST(request) {
       const createSearchRes = await fetch('https://api.attio.com/v2/objects/searches/records', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${attioApiKey}`,
+          'Authorization': `Bearer ${attioKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -209,7 +212,7 @@ export async function POST(request) {
     const updateResponse = await fetch(`https://api.attio.com/v2/objects/searches/records/${recordId}`, {
       method: 'PATCH',
       headers: {
-        'Authorization': `Bearer ${attioApiKey}`,
+        'Authorization': `Bearer ${attioKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(updatePayload)
@@ -227,7 +230,7 @@ export async function POST(request) {
       // Check if a portfolio note already exists for this search
       const existingNotesRes = await fetch(`https://api.attio.com/v2/notes?parent_object=searches&parent_record_id=${recordId}`, {
         headers: {
-          'Authorization': `Bearer ${attioApiKey}`,
+          'Authorization': `Bearer ${attioKey}`,
         }
       });
 
@@ -241,7 +244,7 @@ export async function POST(request) {
         await fetch(`https://api.attio.com/v2/notes/${existingPortfolioNote.id.note_id}`, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${attioApiKey}`,
+            'Authorization': `Bearer ${attioKey}`,
           }
         });
       }
@@ -250,7 +253,7 @@ export async function POST(request) {
       const noteRes = await fetch('https://api.attio.com/v2/notes', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${attioApiKey}`,
+          'Authorization': `Bearer ${attioKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -273,7 +276,7 @@ export async function POST(request) {
         // Check if a portfolio note already exists for this company
         const existingCompanyNotesRes = await fetch(`https://api.attio.com/v2/notes?parent_object=companies&parent_record_id=${companyRecordId}`, {
           headers: {
-            'Authorization': `Bearer ${attioApiKey}`,
+            'Authorization': `Bearer ${attioKey}`,
           }
         });
 
@@ -287,7 +290,7 @@ export async function POST(request) {
           await fetch(`https://api.attio.com/v2/notes/${existingCompanyPortfolioNote.id.note_id}`, {
             method: 'DELETE',
             headers: {
-              'Authorization': `Bearer ${attioApiKey}`,
+              'Authorization': `Bearer ${attioKey}`,
             }
           });
         }
@@ -296,7 +299,7 @@ export async function POST(request) {
         const companyNoteRes = await fetch('https://api.attio.com/v2/notes', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${attioApiKey}`,
+            'Authorization': `Bearer ${attioKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -327,7 +330,7 @@ export async function POST(request) {
         // Fetch all existing Collections
         const listsRes = await fetch('https://api.attio.com/v2/lists', {
           headers: {
-            'Authorization': `Bearer ${attioApiKey}`,
+            'Authorization': `Bearer ${attioKey}`,
           }
         });
 
@@ -355,7 +358,7 @@ export async function POST(request) {
           const createListRes = await fetch('https://api.attio.com/v2/lists', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${attioApiKey}`,
+              'Authorization': `Bearer ${attioKey}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -383,7 +386,7 @@ export async function POST(request) {
               return fetch(`https://api.attio.com/v2/lists/${listId}/attributes`, {
                 method: 'POST',
                 headers: {
-                  'Authorization': `Bearer ${attioApiKey}`,
+                  'Authorization': `Bearer ${attioKey}`,
                   'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -428,7 +431,7 @@ export async function POST(request) {
               await fetch(`https://api.attio.com/v2/lists/${listId}/attributes/stage/statuses`, {
                 method: 'POST',
                 headers: {
-                  'Authorization': `Bearer ${attioApiKey}`,
+                  'Authorization': `Bearer ${attioKey}`,
                   'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -454,7 +457,7 @@ export async function POST(request) {
           const linkRes = await fetch(`https://api.attio.com/v2/objects/searches/records/${recordId}`, {
             method: 'PATCH',
             headers: {
-              'Authorization': `Bearer ${attioApiKey}`,
+              'Authorization': `Bearer ${attioKey}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -551,9 +554,12 @@ function parseCurrency(value) {
 // GET endpoint to list existing searches (for dropdown)
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const attioApiKey = searchParams.get('apiKey');
+  const apiKeyParam = searchParams.get('apiKey');
 
-  if (!attioApiKey) {
+  // Use provided API key or fall back to environment variable
+  const attioKey = apiKeyParam || process.env.ATTIO_API_KEY;
+
+  if (!attioKey) {
     return Response.json({ error: "Missing API key" }, { status: 400 });
   }
 
@@ -561,7 +567,7 @@ export async function GET(request) {
     const response = await fetch('https://api.attio.com/v2/objects/searches/records/query', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${attioApiKey}`,
+        'Authorization': `Bearer ${attioKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({

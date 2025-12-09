@@ -1,8 +1,11 @@
 export async function POST(request) {
   const { apiKey, prompt, systemPrompt } = await request.json();
 
-  if (!apiKey || !prompt) {
-    return Response.json({ error: "Missing apiKey or prompt" }, { status: 400 });
+  // Use provided API key or fall back to environment variable
+  const anthropicKey = apiKey || process.env.ANTHROPIC_API_KEY;
+
+  if (!anthropicKey || !prompt) {
+    return Response.json({ error: "Missing API key or prompt" }, { status: 400 });
   }
 
   // Default system prompt if none provided
@@ -29,7 +32,7 @@ YOUR RULES:
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
+        "x-api-key": anthropicKey,
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({

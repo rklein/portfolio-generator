@@ -877,10 +877,6 @@ Provide 15+ sources with actual, verified URLs.`, {
   // ========== MAIN GENERATE FUNCTION ==========
 
   const handleGenerate = async () => {
-    if (!apiKey) {
-      setError("Please enter your Anthropic API key");
-      return;
-    }
     if (!companyName || !companyUrl || !roleName) {
       setError("Please fill in all company fields");
       return;
@@ -1302,11 +1298,6 @@ ${sections.sources || ""}
   };
 
   const handlePushToAttio = async () => {
-    if (!attioApiKey) {
-      setError("Please enter your Attio API key");
-      return;
-    }
-
     setPushingToAttio(true);
     setAttioResult(null);
 
@@ -1390,30 +1381,37 @@ ${sections.sources || ""}
           <p className="text-slate-400 text-sm">v4.0 — Claude Web Search • Sales Leadership • Culture & Glassdoor</p>
         </div>
 
-        {/* API Keys */}
-        <div className="bg-slate-800 rounded-lg p-4 mb-4 grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Anthropic API Key</label>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-ant-..."
-              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-xs text-slate-500 mt-1">console.anthropic.com → API Keys</p>
+        {/* API Keys - Optional if env vars configured */}
+        <div className="bg-slate-800 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-slate-400">API Keys</span>
+            <span className="text-xs text-emerald-400">✓ Server keys configured</span>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Attio API Key (optional)</label>
-            <input
-              type="password"
-              value={attioApiKey}
-              onChange={(e) => setAttioApiKey(e.target.value)}
-              placeholder="attio_..."
-              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-xs text-slate-500 mt-1">Settings → Developers → API Keys</p>
-          </div>
+          <details className="text-xs text-slate-500">
+            <summary className="cursor-pointer hover:text-slate-300">Override with custom keys (optional)</summary>
+            <div className="grid grid-cols-2 gap-4 mt-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Anthropic API Key</label>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="Using server key..."
+                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Attio API Key</label>
+                <input
+                  type="password"
+                  value={attioApiKey}
+                  onChange={(e) => setAttioApiKey(e.target.value)}
+                  placeholder="Using server key..."
+                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </details>
         </div>
 
         {/* Company Info */}
@@ -1488,21 +1486,19 @@ ${sections.sources || ""}
                 >
                   {copied ? "✓ Copied!" : "📋 Copy Markdown"}
                 </button>
-                {attioApiKey && (
-                  <button
-                    onClick={handlePushToAttio}
-                    disabled={completedCount === 0 || pushingToAttio}
-                    className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-medium py-1.5 px-3 rounded transition-colors flex items-center gap-1"
-                  >
-                    {pushingToAttio ? (
-                      <>
-                        <span className="animate-spin">⏳</span> Pushing...
-                      </>
-                    ) : (
-                      "🚀 Push to Attio"
-                    )}
-                  </button>
-                )}
+                <button
+                  onClick={handlePushToAttio}
+                  disabled={completedCount === 0 || pushingToAttio}
+                  className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-medium py-1.5 px-3 rounded transition-colors flex items-center gap-1"
+                >
+                  {pushingToAttio ? (
+                    <>
+                      <span className="animate-spin">⏳</span> Pushing...
+                    </>
+                  ) : (
+                    "🚀 Push to Attio"
+                  )}
+                </button>
                 {attioResult && (
                   <div className={`text-xs px-2 py-1 rounded ${
                     attioResult.success ? 'bg-emerald-900/50 text-emerald-400' : 'bg-red-900/50 text-red-400'
