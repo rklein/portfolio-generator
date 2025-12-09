@@ -189,6 +189,16 @@ export async function POST(request) {
             tam: [{ currency_value: parseCurrency(portfolioData.tam) }]
           }),
 
+          // Work policy (select field) - NEW
+          ...(portfolioData.work_policy && {
+            work_policy: [{ option: portfolioData.work_policy }]
+          }),
+
+          // Glassdoor rating (number field) - NEW
+          ...(portfolioData.glassdoor_rating && {
+            glassdoor_rating: [{ value: parseFloat(portfolioData.glassdoor_rating) }]
+          }),
+
           // Metadata
           portfolio_last_updated: [{ value: new Date().toISOString().split('T')[0] }]
         }

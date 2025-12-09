@@ -9,10 +9,12 @@ const ALL_SECTIONS = [
   { id: "topPriorities", label: "Top 3 Role Priorities", type: "simple" },
   { id: "leadershipTeam", label: "Leadership Team", type: "complex" },
   { id: "boardMembers", label: "Board of Directors", type: "complex" },
+  { id: "salesLeadership", label: "Sales Leadership", type: "complex" },
   { id: "companyMetrics", label: "Company Metrics", type: "complex" },
   { id: "searchRequirements", label: "Search Requirements", type: "simple" },
   { id: "competitiveLandscape", label: "Competitive Landscape", type: "complex" },
   { id: "newsMedia", label: "News & Media", type: "complex" },
+  { id: "cultureEnvironment", label: "Culture & Work Environment", type: "complex" },
   { id: "contradictions", label: "🚨 Contradictions & Alignment", type: "simple" },
   { id: "pitchToCandidates", label: "The Pitch to Candidates", type: "simple" },
   // Validation and synthesis at the end
@@ -387,6 +389,84 @@ Include founders who sit on the board, investor board members from VCs, and any 
     });
 
     return boardData;
+  };
+
+  const generateSalesLeadership = async () => {
+    setCurrentStep("Finding sales leadership...");
+    addLog("Searching for CRO, VP Sales, Head of Sales");
+
+    const salesData = await callPerplexity(`Who leads sales at ${companyName} (${companyUrl})?
+
+Search LinkedIn, company website, and press releases.
+
+I want to know:
+
+**Sales Leadership:**
+- CRO (Chief Revenue Officer) - name, LinkedIn URL, background
+- VP Sales / Head of Sales - name, LinkedIn URL, background
+- Any other sales leadership (VP Enterprise, VP Commercial, etc.)
+
+**Sales Team Details:**
+- Approximate sales team size (search LinkedIn for sales roles at ${companyName})
+- Recent sales leadership hires or departures in last 12 months
+- Sales methodology if mentioned (MEDDIC, Challenger, etc.)
+
+**GTM Structure:**
+- Is sales direct, channel, PLG, or hybrid?
+- Do they have SDRs/BDRs? How many approximately?
+- Any sales offices outside HQ?
+
+If no dedicated sales leadership exists (common for PLG companies), note that and explain their GTM approach.`, {
+      systemPrompt: RESEARCH_SYSTEM_PROMPT,
+      qualityThreshold: 3
+    });
+
+    return salesData;
+  };
+
+  const generateCultureEnvironment = async () => {
+    setCurrentStep("Researching company culture...");
+    addLog("Searching Glassdoor, company pages, interviews");
+
+    const cultureData = await callPerplexity(`Research the company culture and work environment at ${companyName} (${companyUrl}).
+
+Search Glassdoor, company website, LinkedIn, and founder interviews.
+
+**Work Policy:**
+- Is the company Remote, Hybrid, or In-Office? Be specific.
+- What are the office locations (if any)?
+- Any work-from-anywhere policies?
+
+**Glassdoor & Employee Reviews:**
+- Glassdoor overall rating (X.X out of 5)
+- Number of reviews
+- CEO approval rating if available
+- Top pros mentioned by employees
+- Top cons mentioned by employees
+- "Recommend to a friend" percentage if available
+
+**Compensation Insights:**
+- Any salary data from Glassdoor or Levels.fyi for similar roles
+- Known benefits (equity, 401k, health, perks)
+- Compensation philosophy if publicly stated
+
+**Company Culture:**
+- Core values (from website or careers page)
+- Notable culture traits mentioned in interviews
+- Team size and growth trajectory
+- Any notable cultural initiatives (DEI, remote-first, etc.)
+
+**Engineering/Product Culture (if technical company):**
+- Tech stack
+- Engineering blog or open source contributions
+- How product decisions are made
+
+Cite your sources with URLs.`, {
+      systemPrompt: RESEARCH_SYSTEM_PROMPT,
+      qualityThreshold: 3
+    });
+
+    return cultureData;
   };
 
   const generateCompanyMetrics = async () => {
@@ -846,6 +926,10 @@ Provide 15+ sources with actual, verified URLs.`, {
       newSections.boardMembers = await generateBoardMembers();
       setSections(prev => ({ ...prev, boardMembers: newSections.boardMembers }));
 
+      setCurrentSection("Sales Leadership");
+      newSections.salesLeadership = await generateSalesLeadership();
+      setSections(prev => ({ ...prev, salesLeadership: newSections.salesLeadership }));
+
       setCurrentSection("Company Metrics");
       newSections.companyMetrics = await generateCompanyMetrics();
       setSections(prev => ({ ...prev, companyMetrics: newSections.companyMetrics }));
@@ -870,6 +954,10 @@ Provide 15+ sources with actual, verified URLs.`, {
       setCurrentSection("News & Media");
       newSections.newsMedia = await generateNewsMedia();
       setSections(prev => ({ ...prev, newsMedia: newSections.newsMedia }));
+
+      setCurrentSection("Culture & Work Environment");
+      newSections.cultureEnvironment = await generateCultureEnvironment();
+      setSections(prev => ({ ...prev, cultureEnvironment: newSections.cultureEnvironment }));
 
       // Phase 3: Consistency check (validates data across sections)
       setCurrentSection("Consistency Check");
@@ -918,9 +1006,11 @@ Provide 15+ sources with actual, verified URLs.`, {
         if (sectionId === 'fundingHistory') content = await generateFundingHistory();
         else if (sectionId === 'leadershipTeam') content = await generateLeadershipTeam();
         else if (sectionId === 'boardMembers') content = await generateBoardMembers();
+        else if (sectionId === 'salesLeadership') content = await generateSalesLeadership();
         else if (sectionId === 'companyMetrics') content = await generateCompanyMetrics();
         else if (sectionId === 'competitiveLandscape') content = await generateCompetitiveLandscape();
         else if (sectionId === 'newsMedia') content = await generateNewsMedia();
+        else if (sectionId === 'cultureEnvironment') content = await generateCultureEnvironment();
       } else if (section?.type === 'validation') {
         // Consistency check
         content = await runConsistencyCheck(sections);
@@ -974,6 +1064,9 @@ ${sections.leadershipTeam || ""}
 ## Board of Directors
 ${sections.boardMembers || ""}
 
+## Sales Leadership
+${sections.salesLeadership || ""}
+
 ## Company Metrics
 ${sections.companyMetrics || ""}
 
@@ -985,6 +1078,9 @@ ${sections.competitiveLandscape || ""}
 
 ## News & Media
 ${sections.newsMedia || ""}
+
+## Culture & Work Environment
+${sections.cultureEnvironment || ""}
 
 ## 🚨 Contradictions & Alignment Issues
 ${sections.contradictions || ""}
@@ -1120,6 +1216,40 @@ ${sections.sources || ""}
 
       if (competitors.length > 0) {
         data.top_competitors = competitors.join(', ');
+      }
+    }
+
+    // Extract work policy and Glassdoor rating from cultureEnvironment section
+    if (sections.cultureEnvironment) {
+      const culture = sections.cultureEnvironment;
+
+      // Work Policy extraction
+      if (/fully\s+remote|100%\s+remote|all[- ]remote|remote[- ]first/i.test(culture)) {
+        data.work_policy = 'Remote';
+      } else if (/hybrid/i.test(culture)) {
+        data.work_policy = 'Hybrid';
+      } else if (/in[- ]office|on[- ]?site|office[- ]based|return to office/i.test(culture)) {
+        data.work_policy = 'In-Office';
+      } else if (/flexible|remote[- ]friendly/i.test(culture)) {
+        data.work_policy = 'Flexible';
+      }
+
+      // Glassdoor rating extraction
+      const glassdoorPatterns = [
+        /glassdoor[:\s]+(\d+\.?\d*)\s*(?:\/\s*5|out of 5|stars?|rating)?/i,
+        /(\d+\.?\d*)\s*(?:\/\s*5|out of 5|stars?)\s*(?:on\s+)?glassdoor/i,
+        /glassdoor\s+(?:overall\s+)?rating[:\s]+(\d+\.?\d*)/i,
+        /overall\s+rating[:\s]+(\d+\.?\d*)\s*(?:\/\s*5)?/i,
+      ];
+      for (const pattern of glassdoorPatterns) {
+        const match = culture.match(pattern);
+        if (match) {
+          const rating = parseFloat(match[1]);
+          if (rating >= 1 && rating <= 5) {
+            data.glassdoor_rating = rating;
+            break;
+          }
+        }
       }
     }
 
@@ -1259,7 +1389,7 @@ ${sections.sources || ""}
       <div className="max-w-5xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white mb-1">📋 Client Portfolio Generator</h1>
-          <p className="text-slate-400 text-sm">v3.3 — Structured JSON metrics • Auto-retry • Consistency validation</p>
+          <p className="text-slate-400 text-sm">v3.4 — Sales Leadership • Culture & Glassdoor • Work Policy</p>
         </div>
 
         {/* API Keys */}
@@ -1338,7 +1468,7 @@ ${sections.sources || ""}
                 {currentSection}: {currentStep || "Processing..."}
               </span>
             ) : (
-              "🔍 Generate Portfolio (15 sections • ~30-40 queries with retries)"
+              "🔍 Generate Portfolio (17 sections • ~35-45 queries with retries)"
             )}
           </button>
           <p className="text-xs text-slate-500 mt-2 text-center">
@@ -1504,7 +1634,7 @@ ${sections.sources || ""}
 
         {/* Footer */}
         <div className="mt-8 text-center text-xs text-slate-500">
-          Portfolio Generator v3.3 • Structured JSON Metrics • Auto-Retry • Consistency Check
+          Portfolio Generator v3.4 • Sales Leadership • Culture & Glassdoor • Work Policy
         </div>
       </div>
     </div>
