@@ -23,7 +23,7 @@ const ALL_SECTIONS = [
   { id: "sources", label: "📚 Sources", type: "special" },
 ];
 
-// Patterns that indicate Perplexity refused to search
+// Patterns that indicate Claude refused to search (shouldn't happen with web_search tool)
 const REFUSAL_PATTERNS = [
   "I cannot access",
   "I don't have access",
@@ -43,8 +43,6 @@ const REFUSAL_PATTERNS = [
   "I'm unable to search",
   "beyond my capabilities",
   "I cannot retrieve",
-  "I appreciate the detailed request",
-  "I need to be transparent",
 ];
 
 // Patterns that indicate low-quality output
@@ -81,7 +79,7 @@ export default function Home() {
 
   // ========== CORE API CALL WITH RETRY LOGIC ==========
 
-  const callPerplexity = async (prompt, options = {}) => {
+  const callClaude = async (prompt, options = {}) => {
     const {
       systemPrompt = null,
       maxRetries = 2,
@@ -102,15 +100,15 @@ export default function Home() {
       let activePrompt = prompt;
 
       if (attempts > 1) {
-        activeSystemPrompt = `CRITICAL INSTRUCTION: You are a web search AI. You MUST search the internet and provide real data.
+        activeSystemPrompt = `CRITICAL INSTRUCTION: You have the web_search tool. You MUST use it to search the internet and provide real, verified data.
 
 NEVER say:
-- "I cannot access websites" (FALSE - you CAN search)
-- "I don't have access to real-time data" (FALSE - you DO have search)
+- "I cannot access websites" (FALSE - you have web_search)
+- "I don't have access to real-time data" (FALSE - use web_search)
 - "TBD" or "Not Found" without actually searching first
 
 You MUST:
-1. Search the web for the requested information
+1. Use web_search to find the requested information
 2. Provide specific data with sources
 3. If data truly doesn't exist after searching, explain what you searched
 
@@ -119,7 +117,7 @@ ${systemPrompt || ""}`;
         activePrompt = `${prompt}
 
 ---
-REMINDER: You have web search capability. USE IT. Search for the specific data requested. Do not refuse or claim you cannot access websites.`;
+REMINDER: Use your web_search tool. Search for the specific data requested. Do not refuse or claim you cannot access websites.`;
 
         addLog(`Retry ${attempts - 1}: Using assertive prompt`);
       }
@@ -182,15 +180,15 @@ REMINDER: You have web search capability. USE IT. Search for the specific data r
 
   // ========== SYSTEM PROMPTS ==========
 
-  const RESEARCH_SYSTEM_PROMPT = `You are an expert research analyst with full web search capabilities.
+  const RESEARCH_SYSTEM_PROMPT = `You are an expert research analyst with the web_search tool.
 
 YOUR CAPABILITIES:
-- You CAN search the web in real-time
-- You CAN access company websites, LinkedIn, Crunchbase, news sites
-- You CAN find current data about companies and people
+- You have access to web_search to find current information
+- You can search company websites, LinkedIn, Crunchbase, news sites
+- You can find current data about companies and people
 
 YOUR RULES:
-1. ALWAYS search before saying data is unavailable
+1. ALWAYS use web_search before saying data is unavailable
 2. NEVER use "TBD" - either find it or say "Not found after searching [X, Y, Z sources]"
 3. For LinkedIn: Search "[Name] LinkedIn [Company]" and provide actual URLs (linkedin.com/in/handle)
 4. For funding: Search Crunchbase, company press releases, TechCrunch
@@ -200,7 +198,7 @@ YOUR RULES:
 CRITICAL - COMPANY DISAMBIGUATION:
 When researching a company, ALWAYS verify you are looking at the correct company by checking their website URL. Many company names are common (e.g., "Jellyfish", "Ramp", "Scale"). Use the company URL provided in the query to ensure you're researching the right company, not a different company with the same name.
 
-You are being paid to find this data. Do the work.`;
+Be thorough and accurate. Search multiple sources to verify facts.`;
 
   // ========== SIMPLE SECTION PROMPTS ==========
 
@@ -301,7 +299,7 @@ Make it compelling and specific to ${companyName} - this should excite a top can
     setCurrentStep("Searching Crunchbase & press releases...");
     addLog("Researching funding history");
 
-    const fundingData = await callPerplexity(`What is the complete funding history for ${companyName} (${companyUrl})?
+    const fundingData = await callClaude(`What is the complete funding history for ${companyName} (${companyUrl})?
 
 Search Crunchbase, PitchBook, and press releases.
 
@@ -326,7 +324,7 @@ List rounds in chronological order. At the end, summarize the total amount raise
     setCurrentStep("Finding executives on LinkedIn...");
     addLog("Searching for executive team");
 
-    const execList = await callPerplexity(`Who are the current executives at ${companyName} (${companyUrl})?
+    const execList = await callClaude(`Who are the current executives at ${companyName} (${companyUrl})?
 
 Search their company website, LinkedIn company page, and Crunchbase.
 
@@ -346,7 +344,7 @@ Only include people who currently work there.`, {
     setCurrentStep("Researching executive backgrounds...");
     addLog("Getting executive career histories");
 
-    const execDetails = await callPerplexity(`Research the career backgrounds for the key executives at ${companyName} (${companyUrl}).
+    const execDetails = await callClaude(`Research the career backgrounds for the key executives at ${companyName} (${companyUrl}).
 
 Here are the executives I found:
 ${execList}
@@ -370,7 +368,7 @@ Search their LinkedIn profiles and press mentions. Make sure you're researching 
     setCurrentStep("Finding board members from funding announcements...");
     addLog("Searching for board members");
 
-    const boardData = await callPerplexity(`Who are the board members and board observers at ${companyName} (${companyUrl})?
+    const boardData = await callClaude(`Who are the board members and board observers at ${companyName} (${companyUrl})?
 
 IMPORTANT: I'm asking about the company at ${companyUrl}, not any other company with a similar name.
 
@@ -395,7 +393,7 @@ Include founders who sit on the board, investor board members from VCs, and any 
     setCurrentStep("Finding sales leadership...");
     addLog("Searching for CRO, VP Sales, Head of Sales");
 
-    const salesData = await callPerplexity(`Who leads sales at ${companyName} (${companyUrl})?
+    const salesData = await callClaude(`Who leads sales at ${companyName} (${companyUrl})?
 
 Search LinkedIn, company website, and press releases.
 
@@ -428,7 +426,7 @@ If no dedicated sales leadership exists (common for PLG companies), note that an
     setCurrentStep("Researching company culture...");
     addLog("Searching Glassdoor, company pages, interviews");
 
-    const cultureData = await callPerplexity(`Research the company culture and work environment at ${companyName} (${companyUrl}).
+    const cultureData = await callClaude(`Research the company culture and work environment at ${companyName} (${companyUrl}).
 
 Search Glassdoor, company website, LinkedIn, and founder interviews.
 
@@ -473,7 +471,7 @@ Cite your sources with URLs.`, {
     setCurrentStep("Gathering company metrics from multiple sources...");
     addLog("Researching company metrics");
 
-    const metrics = await callPerplexity(`Research verified metrics for ${companyName} (${companyUrl}).
+    const metrics = await callClaude(`Research verified metrics for ${companyName} (${companyUrl}).
 
 Search LinkedIn, Crunchbase, company website, and press releases.
 
@@ -518,7 +516,7 @@ Verify each data point. Include sources.`, {
     setCurrentStep("Extracting structured data...");
     addLog("Extracting JSON metrics");
 
-    const jsonResponse = await callPerplexity(`Based on the research below, extract ONLY a JSON object. Do not include any other text.
+    const jsonResponse = await callClaude(`Based on the research below, extract ONLY a JSON object. Do not include any other text.
 
 ---
 COMPANY METRICS RESEARCH:
@@ -585,7 +583,7 @@ Rules:
     setCurrentStep("Identifying competitors...");
     addLog("Finding competitors");
 
-    const competitorList = await callPerplexity(`Identify 15 competitors to ${companyName} (${companyUrl}).
+    const competitorList = await callClaude(`Identify 15 competitors to ${companyName} (${companyUrl}).
 
 Search for companies in the same market, mentioned as alternatives, or in analyst comparisons.
 
@@ -619,7 +617,7 @@ Search for companies in the same market, mentioned as alternatives, or in analys
     setCurrentStep("Researching competitor metrics...");
     addLog("Getting competitor details");
 
-    const competitorDetails = await callPerplexity(`Research detailed metrics for ${companyName}'s top 10 competitors.
+    const competitorDetails = await callClaude(`Research detailed metrics for ${companyName}'s top 10 competitors.
 
 Competitors:
 ${competitorList}
@@ -652,7 +650,7 @@ Search each company on LinkedIn and Crunchbase separately.`, {
     setCurrentStep("Finding press coverage...");
     addLog("Searching news articles");
 
-    const news = await callPerplexity(`What are the recent news articles and press coverage about ${companyName} (${companyUrl})?
+    const news = await callClaude(`What are the recent news articles and press coverage about ${companyName} (${companyUrl})?
 
 Search for articles from the past 18 months on TechCrunch, VentureBeat, Forbes, Bloomberg, and industry publications.
 
@@ -686,7 +684,7 @@ List 10-15 articles total, with the most recent and significant ones first.`, {
       .map(([key, value]) => `### ${key}\n${value?.substring(0, 1200)}`)
       .join('\n\n');
 
-    const consistency = await callPerplexity(`You are a fact-checker reviewing research about ${companyName}.
+    const consistency = await callClaude(`You are a fact-checker reviewing research about ${companyName}.
 
 IMPORTANT: Do NOT search the web. Only analyze the text provided below for internal contradictions.
 
@@ -754,7 +752,7 @@ List any important data marked as TBD/Not Found that should be findable:
     addLog("Creating Quick Digest synthesis");
 
     // Pass FULL sections (not truncated) for better extraction
-    const digest = await callPerplexity(`You are a synthesis assistant. Your job is to EXTRACT and ORGANIZE data that already exists in the research below.
+    const digest = await callClaude(`You are a synthesis assistant. Your job is to EXTRACT and ORGANIZE data that already exists in the research below.
 
 CRITICAL RULES:
 1. Do NOT search the web
@@ -848,7 +846,7 @@ REMEMBER: All this data IS in the sections above. Extract it, don't search for i
     setCurrentStep("Compiling all sources...");
     addLog("Generating source list");
 
-    const sources = await callPerplexity(`Compile a comprehensive source list for ${companyName} (${companyUrl}) research.
+    const sources = await callClaude(`Compile a comprehensive source list for ${companyName} (${companyUrl}) research.
 
 **Primary Sources:**
 - Company Website: ${companyUrl}
@@ -880,7 +878,7 @@ Provide 15+ sources with actual, verified URLs.`, {
 
   const handleGenerate = async () => {
     if (!apiKey) {
-      setError("Please enter your Perplexity API key");
+      setError("Please enter your Anthropic API key");
       return;
     }
     if (!companyName || !companyUrl || !roleName) {
@@ -892,7 +890,7 @@ Provide 15+ sources with actual, verified URLs.`, {
     setLoading(true);
     setSections({});
     setLogs([]);
-    addLog("Starting portfolio generation v3.2");
+    addLog("Starting portfolio generation v4.0 (Claude Web Search)");
 
     const newSections = {};
 
@@ -904,7 +902,7 @@ Provide 15+ sources with actual, verified URLs.`, {
         setCurrentStep("Researching...");
         addLog(`Generating: ${section.label}`);
 
-        const content = await callPerplexity(getSimplePrompt(section.id), {
+        const content = await callClaude(getSimplePrompt(section.id), {
           systemPrompt: RESEARCH_SYSTEM_PROMPT,
           qualityThreshold: 3
         });
@@ -1021,7 +1019,7 @@ Provide 15+ sources with actual, verified URLs.`, {
         content = await generateQuickDigest(sections);
       } else {
         // Simple research sections
-        content = await callPerplexity(getSimplePrompt(sectionId), {
+        content = await callClaude(getSimplePrompt(sectionId), {
           systemPrompt: RESEARCH_SYSTEM_PROMPT,
           qualityThreshold: 3
         });
@@ -1389,20 +1387,21 @@ ${sections.sources || ""}
       <div className="max-w-5xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white mb-1">📋 Client Portfolio Generator</h1>
-          <p className="text-slate-400 text-sm">v3.4 — Sales Leadership • Culture & Glassdoor • Work Policy</p>
+          <p className="text-slate-400 text-sm">v4.0 — Claude Web Search • Sales Leadership • Culture & Glassdoor</p>
         </div>
 
         {/* API Keys */}
         <div className="bg-slate-800 rounded-lg p-4 mb-4 grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Perplexity API Key</label>
+            <label className="block text-xs font-medium text-slate-300 mb-1">Anthropic API Key</label>
             <input
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="pplx-..."
+              placeholder="sk-ant-..."
               className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <p className="text-xs text-slate-500 mt-1">console.anthropic.com → API Keys</p>
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">Attio API Key (optional)</label>
@@ -1609,7 +1608,7 @@ ${sections.sources || ""}
             <div className="text-4xl mb-3">🔍</div>
             <h3 className="text-lg font-semibold text-white mb-2">Ready to Research</h3>
             <p className="text-slate-400 text-sm max-w-lg mx-auto mb-6">
-              v3.3 now returns structured JSON metrics for accurate Attio field population. No more regex guessing.
+              v4.0 uses Claude with web search for accurate, fact-checked research. Same quality as Claude Code.
             </p>
             <div className="grid grid-cols-4 gap-3 text-xs max-w-2xl mx-auto">
               <div className="bg-slate-700 rounded p-3">
@@ -1634,7 +1633,7 @@ ${sections.sources || ""}
 
         {/* Footer */}
         <div className="mt-8 text-center text-xs text-slate-500">
-          Portfolio Generator v3.4 • Sales Leadership • Culture & Glassdoor • Work Policy
+          Portfolio Generator v4.0 • Powered by Claude with Web Search
         </div>
       </div>
     </div>

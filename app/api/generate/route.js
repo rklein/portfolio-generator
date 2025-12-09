@@ -24,23 +24,28 @@ YOUR RULES:
   const activeSystemPrompt = systemPrompt || defaultSystemPrompt;
 
   try {
-    const response = await fetch("https://api.perplexity.ai/chat/completions", {
+    // Use Anthropic API with web search tool
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "sonar-pro",
-        messages: [
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 16000,
+        tools: [
           {
-            role: "system",
-            content: activeSystemPrompt
-          },
-          { role: "user", content: prompt }
+            type: "web_search",
+            name: "web_search",
+            max_uses: 10
+          }
         ],
-        max_tokens: 4000,
-        temperature: 0.1
+        system: activeSystemPrompt,
+        messages: [
+          { role: "user", content: prompt }
+        ]
       })
     });
 
@@ -52,23 +57,38 @@ YOUR RULES:
       data = JSON.parse(responseText);
     } catch (parseError) {
       // Response is not JSON (likely HTML error page)
-      console.error('Perplexity returned non-JSON:', responseText.substring(0, 200));
+      console.error('Anthropic returned non-JSON:', responseText.substring(0, 500));
       return Response.json({
-        error: `Perplexity API returned invalid response. Status: ${response.status}. Check your API key.`
+        error: `Anthropic API returned invalid response. Status: ${response.status}. Check your API key.`
       }, { status: 500 });
     }
 
     if (!response.ok) {
+      console.error('Anthropic API error:', data);
       return Response.json({
-        error: data.error?.message || `Perplexity API error (${response.status})`
+        error: data.error?.message || `Anthropic API error (${response.status}): ${JSON.stringify(data.error || data)}`
       }, { status: response.status });
     }
 
-    if (!data.choices?.[0]?.message?.content) {
-      return Response.json({ error: "No content in Perplexity response" }, { status: 500 });
+    // Extract text content from Claude's response
+    // Claude returns an array of content blocks (text, tool_use, tool_result, etc.)
+    if (!data.content || !Array.isArray(data.content)) {
+      console.error('Unexpected response structure:', data);
+      return Response.json({ error: "No content in Anthropic response" }, { status: 500 });
     }
 
-    return Response.json({ content: data.choices[0].message.content });
+    // Combine all text blocks into a single response
+    const textContent = data.content
+      .filter(block => block.type === 'text')
+      .map(block => block.text)
+      .join('\n\n');
+
+    if (!textContent) {
+      console.error('No text content in response:', data.content);
+      return Response.json({ error: "No text content in Anthropic response" }, { status: 500 });
+    }
+
+    return Response.json({ content: textContent });
   } catch (error) {
     console.error('Generate API error:', error);
     return Response.json({ error: error.message }, { status: 500 });
