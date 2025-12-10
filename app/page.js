@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
 
 const ALL_SECTIONS = [
   // Research sections first
@@ -77,6 +77,23 @@ export default function Home() {
     setLogs(prev => [...prev.slice(-50), `${new Date().toLocaleTimeString()}: ${message}`]);
   };
 
+  // ========== RATE LIMITING ==========
+
+  // Track last API call time to enforce rate limiting
+  const lastCallTime = React.useRef(0);
+  const RATE_LIMIT_DELAY_MS = 45000; // 45 seconds between calls to stay under 30K tokens/min
+
+  const waitForRateLimit = async () => {
+    const now = Date.now();
+    const timeSinceLastCall = now - lastCallTime.current;
+    if (lastCallTime.current > 0 && timeSinceLastCall < RATE_LIMIT_DELAY_MS) {
+      const waitTime = RATE_LIMIT_DELAY_MS - timeSinceLastCall;
+      addLog(`Rate limit: waiting ${Math.ceil(waitTime/1000)}s...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    lastCallTime.current = Date.now();
+  };
+
   // ========== CORE API CALL WITH RETRY LOGIC ==========
 
   const callClaude = async (prompt, options = {}) => {
@@ -88,12 +105,20 @@ export default function Home() {
       qualityThreshold = 3 // max TBDs allowed
     } = options;
 
+    // Wait for rate limit before making call
+    await waitForRateLimit();
+
     let attempts = 0;
     let lastResponse = null;
     let lastError = null;
 
     while (attempts <= maxRetries) {
       attempts++;
+
+      // Also wait on retries
+      if (attempts > 1) {
+        await waitForRateLimit();
+      }
 
       // More assertive system prompt on retries
       let activeSystemPrompt = systemPrompt;
@@ -1465,11 +1490,11 @@ ${sections.sources || ""}
                 {currentSection}: {currentStep || "Processing..."}
               </span>
             ) : (
-              "🔍 Generate Portfolio (17 sections • ~35-45 queries with retries)"
+              "🔍 Generate Portfolio (17 sections)"
             )}
           </button>
           <p className="text-xs text-slate-500 mt-2 text-center">
-            Estimated time: 8-12 minutes • Auto-retries on failures • Includes gap-filling
+            Estimated time: ~15-20 min (rate limited to 30K tokens/min)
           </p>
         </div>
 
