@@ -81,7 +81,7 @@ export default function Home() {
 
   // Track last API call time to enforce rate limiting
   const lastCallTime = React.useRef(0);
-  const RATE_LIMIT_DELAY_MS = 90000; // 90 seconds between calls to stay under 10K tokens/min
+  const RATE_LIMIT_DELAY_MS = 45000; // 45 seconds between calls to stay under 30K tokens/min
 
   const waitForRateLimit = async () => {
     const now = Date.now();
@@ -1494,7 +1494,7 @@ ${sections.sources || ""}
             )}
           </button>
           <p className="text-xs text-slate-500 mt-2 text-center">
-            Estimated time: ~25-30 min (rate limited to 10K tokens/min)
+            Estimated time: ~15-20 min (rate limited to 30K tokens/min)
           </p>
         </div>
 
